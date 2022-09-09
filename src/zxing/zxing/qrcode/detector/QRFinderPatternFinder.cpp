@@ -61,7 +61,7 @@ namespace
 
 int FinderPatternFinder::CENTER_QUORUM = 2;
 int FinderPatternFinder::MIN_SKIP = 3;
-int FinderPatternFinder::MAX_MODULES = 57;
+int FinderPatternFinder::MAX_MODULES = 97;
 
 float FinderPatternFinder::centerFromEnd(int *stateCount, int end)
 {
