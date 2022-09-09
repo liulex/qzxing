@@ -41,6 +41,17 @@ public:
   Mode(const Mode& mode);
   Mode();
 
+  static constexpr int TERMINATOR_BITS = 0x00;
+  static constexpr int NUMERIC_BITS = 0x01;
+  static constexpr int ALPHANUMERIC_BITS = 0x02;
+  static constexpr int STRUCTURED_APPEND_BITS = 0x03;
+  static constexpr int BYTE_BITS = 0x04;
+  static constexpr int ECI_BITS = 0x07;
+  static constexpr int KANJI_BITS = 0x08;
+  static constexpr int FNC1_FIRST_POSITION_BITS = 0x05;
+  static constexpr int FNC1_SECOND_POSITION_BITS = 0x09;
+  static constexpr int HANZI_BITS = 0x0D;
+
   static Mode TERMINATOR;
   static Mode NUMERIC;
   static Mode ALPHANUMERIC;

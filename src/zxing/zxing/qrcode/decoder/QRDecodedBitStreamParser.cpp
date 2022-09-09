@@ -362,6 +362,9 @@ DecodedBitStreamParser::decode(QSharedPointer<std::vector<zxing::byte>> bytes,
     QSharedPointer<std::vector< QSharedPointer<std::vector<zxing::byte>>>> byteSegments (new std::vector< QSharedPointer<std::vector<zxing::byte>>>());
     const CharacterSetECI* currentCharacterSetECI = 0;
     string charSet = "";
+    int symbolSequence = -1;
+    int parityData = -1;
+
     try {
         bool fc1InEffect = false;
         Mode* mode = 0;
@@ -378,51 +381,111 @@ DecodedBitStreamParser::decode(QSharedPointer<std::vector<zxing::byte>> bytes,
                     // throw FormatException.getFormatInstance();
                 }
             }
-            if (mode != &Mode::TERMINATOR) {
-                if ((mode == &Mode::FNC1_FIRST_POSITION) || (mode == &Mode::FNC1_SECOND_POSITION)) {
-                    // We do little with FNC1 except alter the parsed result a bit according to the spec
-                    fc1InEffect = true;
-                } else if (mode == &Mode::STRUCTURED_APPEND) {
-                    if (bits.available() < 16) {
-                        throw FormatException();
-                    }
-                    // not really supported; all we do is ignore it
-                    // Read next 8 bits (symbol sequence #) and 8 bits (parity data), then continue
-                    bits.readBits(16);
-                } else if (mode == &Mode::ECI) {
-                    // Count doesn't apply to ECI
-                    int value = parseECIValue(bits);
-                    currentCharacterSetECI = CharacterSetECI::getCharacterSetECIByValue(value);
-                    if (currentCharacterSetECI == 0) {
-                        throw FormatException();
-                    }
-                } else {
-                    // First handle Hanzi mode which does not start with character count
-                    if (mode == &Mode::HANZI) {
-                        //chinese mode contains a sub set indicator right after mode indicator
-                        int subset = bits.readBits(4);
-                        int countHanzi = bits.readBits(mode->getCharacterCountBits(version));
-                        if (subset == GB2312_SUBSET) {
-                            decodeHanziSegment(bits_, result, countHanzi);
-                        }
-                    } else {
-                        // "Normal" QR code modes:
-                        // How many characters will follow, encoded in this mode?
-                        int count = bits.readBits(mode->getCharacterCountBits(version));
-                        if (mode == &Mode::NUMERIC) {
-                            decodeNumericSegment(bits_, result, count);
-                        } else if (mode == &Mode::ALPHANUMERIC) {
-                            decodeAlphanumericSegment(bits_, result, count, fc1InEffect);
-                        } else if (mode == &Mode::BYTE) {
-                            charSet = decodeByteSegment(bits_, result, count, currentCharacterSetECI, byteSegments, hints);
-                        } else if (mode == &Mode::KANJI) {
-                            decodeKanjiSegment(bits_, result, count);
-                        } else {
-                            throw FormatException();
-                        }
-                    }
+            switch (mode->getBits()) {
+              case Mode::TERMINATOR_BITS:
+                break;
+              case Mode::FNC1_FIRST_POSITION_BITS:
+              case Mode::FNC1_SECOND_POSITION_BITS:
+                // We do little with FNC1 except alter the parsed result a bit according to the spec
+                fc1InEffect = true;
+                break;
+              case Mode::STRUCTURED_APPEND_BITS:
+                if (bits.available() < 16) {
+                  throw FormatException();
                 }
+                // sequence number and parity is added later to the result metadata
+                // Read next 8 bits (symbol sequence #) and 8 bits (parity data), then continue
+                symbolSequence = bits.readBits(8);
+                parityData = bits.readBits(8);
+                break;
+              case Mode::ECI_BITS: {
+                // Count doesn't apply to ECI
+                int value = parseECIValue(bits);
+                currentCharacterSetECI = CharacterSetECI::getCharacterSetECIByValue(value);
+                if (currentCharacterSetECI == 0) {
+                  throw FormatException();
+                }
+              }
+                break;
+              case Mode::HANZI_BITS: {
+                // First handle Hanzi mode which does not start with character count
+                // Chinese mode contains a sub set indicator right after mode indicator
+                int subset = bits.readBits(4);
+                int countHanzi = bits.readBits(mode->getCharacterCountBits(version));
+                if (subset == GB2312_SUBSET) {
+                  decodeHanziSegment(bits_, result, countHanzi);
+                }
+              }
+                break;
+              default: {
+                // "Normal" QR code modes:
+                // How many characters will follow, encoded in this mode?
+                int count = bits.readBits(mode->getCharacterCountBits(version));
+                switch (mode->getBits()) {
+                  case Mode::NUMERIC_BITS:
+                    decodeNumericSegment(bits_, result, count);
+                    break;
+                  case Mode::ALPHANUMERIC_BITS:
+                    decodeAlphanumericSegment(bits_, result, count, fc1InEffect);
+                    break;
+                  case Mode::BYTE_BITS:
+                    decodeByteSegment(
+                        bits_, result, count, currentCharacterSetECI, byteSegments, hints);
+                    break;
+                  case Mode::KANJI_BITS:
+                    decodeKanjiSegment(bits_, result, count);
+                    break;
+                  default:
+                    throw FormatException();
+                }
+              }
+                break;
             }
+            //if (mode != &Mode::TERMINATOR) {
+            //    if ((mode == &Mode::FNC1_FIRST_POSITION) || (mode == &Mode::FNC1_SECOND_POSITION)) {
+            //        // We do little with FNC1 except alter the parsed result a bit according to the spec
+            //        fc1InEffect = true;
+            //    } else if (mode == &Mode::STRUCTURED_APPEND) {
+            //        if (bits.available() < 16) {
+            //            throw FormatException();
+            //        }
+            //        // not really supported; all we do is ignore it
+            //        // Read next 8 bits (symbol sequence #) and 8 bits (parity data), then continue
+            //        bits.readBits(16);
+            //    } else if (mode == &Mode::ECI) {
+            //        // Count doesn't apply to ECI
+            //        int value = parseECIValue(bits);
+            //        currentCharacterSetECI = CharacterSetECI::getCharacterSetECIByValue(value);
+            //        if (currentCharacterSetECI == 0) {
+            //            throw FormatException();
+            //        }
+            //    } else {
+            //        // First handle Hanzi mode which does not start with character count
+            //        if (mode == &Mode::HANZI) {
+            //            //chinese mode contains a sub set indicator right after mode indicator
+            //            int subset = bits.readBits(4);
+            //            int countHanzi = bits.readBits(mode->getCharacterCountBits(version));
+            //            if (subset == GB2312_SUBSET) {
+            //                decodeHanziSegment(bits_, result, countHanzi);
+            //            }
+            //        } else {
+            //            // "Normal" QR code modes:
+            //            // How many characters will follow, encoded in this mode?
+            //            int count = bits.readBits(mode->getCharacterCountBits(version));
+            //            if (mode == &Mode::NUMERIC) {
+            //                decodeNumericSegment(bits_, result, count);
+            //            } else if (mode == &Mode::ALPHANUMERIC) {
+            //                decodeAlphanumericSegment(bits_, result, count, fc1InEffect);
+            //            } else if (mode == &Mode::BYTE) {
+            //                charSet = decodeByteSegment(bits_, result, count, currentCharacterSetECI, byteSegments, hints);
+            //            } else if (mode == &Mode::KANJI) {
+            //                decodeKanjiSegment(bits_, result, count);
+            //            } else {
+            //                throw FormatException();
+            //            }
+            //        }
+            //    }
+            //}
         } while (mode != &Mode::TERMINATOR);
     } catch (IllegalArgumentException const& iae) {
         (void)iae;
