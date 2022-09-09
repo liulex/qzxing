@@ -109,6 +109,7 @@ public:
 
 /**
  * 101: mask bits for which xy mod 2 + xy mod 3 == 0
+ * equivalently, such that xy mod 6 == 0
  */
 class DataMask101 : public DataMask {
 public:
@@ -119,17 +120,18 @@ public:
 
 /**
  * 110: mask bits for which (xy mod 2 + xy mod 3) mod 2 == 0
+ * equivalently, such that xy mod 6 < 3
  */
 class DataMask110 : public DataMask {
 public:
   bool isMasked(size_t x, size_t y) {
-    size_t temp = x * y;
-    return ((temp + (temp % 3)) & 0x01) == 0;
+    return ((x * y) % 6) < 3;
   }
 };
 
 /**
  * 111: mask bits for which ((x+y)mod 2 + xy mod 3) mod 2 == 0
+ * equivalently, such that (x + y + xy mod 3) mod 2 == 0
  */
 class DataMask111 : public DataMask {
 public:
