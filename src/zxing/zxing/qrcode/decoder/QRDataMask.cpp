@@ -113,10 +113,7 @@ public:
 class DataMask101 : public DataMask {
 public:
   bool isMasked(size_t x, size_t y) {
-    size_t temp = x * y;
-    //		return (temp & 0x01) + (temp % 3) == 0;
-    return (temp % 2) + (temp % 3) == 0;
-
+    return (x * y) % 6 == 0;
   }
 };
 
@@ -127,8 +124,7 @@ class DataMask110 : public DataMask {
 public:
   bool isMasked(size_t x, size_t y) {
     size_t temp = x * y;
-    //		return (((temp & 0x01) + (temp % 3)) & 0x01) == 0;
-    return (((temp % 2) + (temp % 3)) % 2) == 0;
+    return ((temp + (temp % 3)) & 0x01) == 0;
   }
 };
 
@@ -138,8 +134,7 @@ public:
 class DataMask111 : public DataMask {
 public:
   bool isMasked(size_t x, size_t y) {
-    //		return ((((x + y) & 0x01) + ((x * y) % 3)) & 0x01) == 0;
-    return ((((x + y) % 2) + ((x * y) % 3)) % 2) == 0;
+    return ((x + y + ((x * y) % 3)) & 0x01) == 0;
   }
 };
 
