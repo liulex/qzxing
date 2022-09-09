@@ -36,8 +36,6 @@ using zxing::oned::Code39Reader;
 using zxing::BitArray;
 
 namespace {
-  const char ALPHABET[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. *$/+%";
-
   /**
    * These represent the encodings of characters, as patterns of wide and narrow
    * bars.
@@ -49,13 +47,13 @@ namespace {
     0x034, 0x121, 0x061, 0x160, 0x031, 0x130, 0x070, 0x025, 0x124, 0x064, // 0-9
     0x109, 0x049, 0x148, 0x019, 0x118, 0x058, 0x00D, 0x10C, 0x04C, 0x01C, // A-J
     0x103, 0x043, 0x142, 0x013, 0x112, 0x052, 0x007, 0x106, 0x046, 0x016, // K-T
-    0x181, 0x0C1, 0x1C0, 0x091, 0x190, 0x0D0, 0x085, 0x184, 0x0C4, 0x094, // U-*
-    0x0A8, 0x0A2, 0x08A, 0x02A // $-%
+    0x181, 0x0C1, 0x1C0, 0x091, 0x190, 0x0D0, 0x085, 0x184, 0x0C4, 0x0A8, // U-$
+    0x0A2, 0x08A, 0x02A  // /-%
   };
 
   const int ASTERISK_ENCODING = 0x094;
   const char ALPHABET_STRING[] =
-    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. *$/+%";
+    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%";
 
   const std::string alphabet_string (ALPHABET_STRING);
 }
@@ -142,7 +140,7 @@ QSharedPointer<Result> Code39Reader::decodeRow(int rowNumber, QSharedPointer<Bit
     for (int i = 0; i < max; i++) {
       total += int(alphabet_string.find_first_of(decodeRowResult[i], 0));
     }
-    if (result[max] != ALPHABET[total % 43]) {
+    if (result[max] != ALPHABET_STRING[total % 43]) {
       throw ChecksumException();
     }
     result.resize(max);
@@ -262,8 +260,11 @@ int Code39Reader::toNarrowWidePattern(vector<int>& counters){
 char Code39Reader::patternToChar(int pattern){
   for (int i = 0; i < CHARACTER_ENCODINGS_LEN; i++) {
     if (CHARACTER_ENCODINGS[i] == pattern) {
-      return ALPHABET[i];
+      return ALPHABET_STRING[i];
     }
+  }
+  if (pattern == ASTERISK_ENCODING) {
+    return '*';
   }
   throw ReaderException("");
 }
