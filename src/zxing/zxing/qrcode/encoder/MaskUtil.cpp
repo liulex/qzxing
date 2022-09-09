@@ -87,8 +87,9 @@ int MaskUtil::applyMaskPenaltyRule3(const ByteMatrix& matrix)
 
 bool MaskUtil::isWhiteHorizontal(const std::vector<zxing::byte>& rowArray, int from, int to)
 {
-    from = std::max(from, 0);
-    to = std::min(to, int(rowArray.size()));
+    if (from < 0 || rowArray.size() < to) {
+      return false;
+    }
     for (int i = from; i < to; i++) {
         if (rowArray[size_t(i)] == 1) {
             return false;
@@ -99,8 +100,9 @@ bool MaskUtil::isWhiteHorizontal(const std::vector<zxing::byte>& rowArray, int f
 
 bool MaskUtil::isWhiteVertical(const std::vector<std::vector<zxing::byte> > &array, int col, int from, int to)
 {
-    from = std::max(from, 0);
-    to = std::min(to, int(array.size()));
+  if (from < 0 || array.size() < to) {
+    return false;
+  }
     for (int i = from; i < to; i++) {
         if (array[size_t(i)][size_t(col)] == 1) {
             return false;
