@@ -298,8 +298,20 @@ QSharedPointer<String> Code39Reader::decodeExtended(std::string encoded){
         // %A to %E map to control codes ESC to US
         if (next >= 'A' && next <= 'E') {
           decodedChar = (zxing::byte) (next - 38);
-        } else if (next >= 'F' && next <= 'W') {
-          decodedChar = (zxing::byte) (next - 11);
+        } else if (next >= 'F' && next <= 'J') {
+          decodedChar = (zxing::byte)(next - 11);
+        } else if (next >= 'K' && next <= 'O') {
+          decodedChar = (zxing::byte)(next + 16);
+        } else if (next >= 'P' && next <= 'T') {
+          decodedChar = (zxing::byte)(next + 43);
+        } else if (next == 'U') {
+          decodedChar = (zxing::byte)0;
+        } else if (next == 'V') {
+          decodedChar = '@';
+        } else if (next == 'W') {
+          decodedChar = '`';
+        } else if (next == 'X' || next == 'Y' || next == 'Z') {
+          decodedChar = (zxing::byte)127;
         } else {
           throw ReaderException("");
         }
